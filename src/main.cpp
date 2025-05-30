@@ -158,7 +158,7 @@ int main() {
             if (!validCipher) {
                 std::cerr << "Выбранный модуль недоступен. Пожалуйста, выберите другой.\n";
             } else {
-                // сохранить выбор
+                // Сохранить выбор
                 cipher = static_cast<CipherType>(cipherChoice);
                 break;
             }
