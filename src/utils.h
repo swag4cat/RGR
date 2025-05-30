@@ -42,3 +42,6 @@ void writeLog(CipherType cipher, ActionType action, const std::string& key, cons
 
 // Безопасно читает целое число из ввода
 bool safeInputInt(int& var, const std::string& errorMsg);
+
+// Ожидает нажатия Enter для завершения работы
+void pauseBeforeExit();

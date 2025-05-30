@@ -1,28 +1,57 @@
 # Компилятор и флаги
 CXX = g++
-CXXFLAGS = -Wall -std=c++17
-TARGET = encrypt_decrypt
+CXXFLAGS = -Wall -std=c++17 -fPIC
 
-# Файлы исходного кода
-SRC = main.cpp shifrs.cpp
-OBJ_DIR = obj
-OBJS = $(addprefix $(OBJ_DIR)/, main.o shifrs.o utils.o)
+# Каталоги
+SRC_DIR := src
+CIPHER_DIR := ciphers
+BUILD_DIR := build
+OBJ_DIR := obj
 
-# Основная цель сборки
-all: $(OBJ_DIR) $(TARGET)
+# Цель и библиотеки
+TARGET := $(BUILD_DIR)/encrypt_decrypt
+LIBS := $(BUILD_DIR)/libgronsfeld.so $(BUILD_DIR)/libvigenere.so $(BUILD_DIR)/librsa.so
+INPUT_FILE := $(BUILD_DIR)/input.txt
+
+# Объектные файлы
+OBJS := $(OBJ_DIR)/main.o $(OBJ_DIR)/utils.o
+
+# Цель по умолчанию
+all: $(BUILD_DIR) $(OBJ_DIR) $(TARGET) $(LIBS) $(INPUT_FILE)
+
+# Создание input.txt
+$(INPUT_FILE):
+	touch $@
+	@echo "Файл input.txt создан в папке build"
 
 # Сборка исполняемого файла
 $(TARGET): $(OBJS)
-	$(CXX) $(CXXFLAGS) -o $@ $(OBJS)
+	$(CXX) $(CXXFLAGS) -o $@ $^ -ldl
 
-# Правило для объектных файлов
-$(OBJ_DIR)/%.o: %.cpp shifrs.h | $(OBJ_DIR)
+# Сборка объектных файлов
+$(OBJ_DIR)/main.o: $(SRC_DIR)/main.cpp $(SRC_DIR)/utils.h
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
-# Создание директории для объектных файлов
+$(OBJ_DIR)/utils.o: $(SRC_DIR)/utils.cpp $(SRC_DIR)/utils.h
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+# Сборка .so библиотек
+$(BUILD_DIR)/libgronsfeld.so: $(CIPHER_DIR)/gronsfeld.cpp $(CIPHER_DIR)/gronsfeld.h
+	$(CXX) $(CXXFLAGS) -shared -o $@ $<
+
+$(BUILD_DIR)/libvigenere.so: $(CIPHER_DIR)/vigenere.cpp $(CIPHER_DIR)/vigenere.h
+	$(CXX) $(CXXFLAGS) -shared -o $@ $<
+
+$(BUILD_DIR)/librsa.so: $(CIPHER_DIR)/rsa.cpp $(CIPHER_DIR)/rsa.h
+	$(CXX) $(CXXFLAGS) -shared -o $@ $<
+
+# Создание директорий
 $(OBJ_DIR):
 	mkdir -p $(OBJ_DIR)
 
-# Очистка проекта
+$(BUILD_DIR):
+	mkdir -p $(BUILD_DIR)
+
+# Очистка
 clean:
-	rm -rf $(OBJ_DIR) $(TARGET) output.txt log.txt
+	rm -rf $(OBJ_DIR) $(BUILD_DIR)

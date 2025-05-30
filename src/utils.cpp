@@ -65,11 +65,19 @@ void writeLog(CipherType cipher, ActionType action, const std::string& key, cons
 // Безопасный ввод числа
 bool safeInputInt(int& var, const std::string& errorMsg) {
     if (!(std::cin >> var)) {
-        std::cin.clear(); // Сброс флага ошибки
-        std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n'); // Очистка буфера
+        std::cin.clear();
+        std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n'); // ← УДАЛИТЬ ЭТО
         std::cerr << "Ошибка: " << errorMsg << "\n";
         return false;
     }
-    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n'); // Очистка \n
+    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n'); // ← И ЭТО ТОЖЕ
     return true;
+}
+
+// Ожидает нажатия Enter для завершения работы
+void pauseBeforeExit() {
+    std::cin.clear(); // сброс флагов ошибок
+    std::cout << "\nНажмите Enter для выхода...";
+    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n'); // удалить '\n' от предыдущего ввода
+    std::cin.get(); // теперь точно дождётся нового нажатия Enter
 }

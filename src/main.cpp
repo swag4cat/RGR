@@ -2,8 +2,38 @@
 #include <fstream>
 #include <limits>
 #include <sstream>
-#include "shifrs.h"
+#include <cstdint>
+#include <dlfcn.h>
+
 #include "utils.h"
+
+// Типы функций для шифрования/дешифрования
+using EncryptFunc = std::string(*)(const std::string&, const std::string&);
+using DecryptFunc = std::string(*)(const std::string&, const std::string&);
+
+// Указатели на функции Виженера
+EncryptFunc vigenereEncryptFunc = nullptr;
+DecryptFunc vigenereDecryptFunc = nullptr;
+
+// Типы функций для RSA
+using KeyGenFunc = std::tuple<uint64_t, uint64_t, uint64_t>(*)();
+using RSAEncryptFunc = std::string(*)(const std::string&, uint64_t, uint64_t);
+using RSADecryptFunc = std::string(*)(const std::string&, uint64_t, uint64_t);
+
+// Указатели на функции RSA
+KeyGenFunc rsaGenerateKeysFunc = nullptr;
+RSAEncryptFunc rsaEncryptFunc = nullptr;
+RSADecryptFunc rsaDecryptFunc = nullptr;
+
+// Загрузка библиотек шифрования
+void* gronsfeldLib = dlopen("./libgronsfeld.so", RTLD_LAZY);
+bool gronsfeldAvailable = (gronsfeldLib != nullptr);
+
+void* vigenereLib = dlopen("./libvigenere.so", RTLD_LAZY);
+bool vigenereAvailable = (vigenereLib != nullptr);
+
+void* rsaLib = dlopen("./librsa.so", RTLD_LAZY);
+bool rsaAvailable = (rsaLib != nullptr);
 
 void simulateProcessing();
 
@@ -32,6 +62,7 @@ int main() {
 
         if (!accessGranted) {
             std::cerr << "Доступ заблокирован.\n";
+            pauseBeforeExit();
             return 1;
         }
 
@@ -45,9 +76,14 @@ int main() {
         std::string input;
         int sourceChoice;
         std::cout << "\nВыберите источник текста:\n1 — Файл\n2 — Ввести вручную\nВаш выбор: ";
-        if (!safeInputInt(sourceChoice, "Введите 1 или 2.")) return 1;
+        if (!safeInputInt(sourceChoice, "Введите 1 или 2.")) {
+            pauseBeforeExit();
+            return 1;
+
+        }
         if (sourceChoice != 1 && sourceChoice != 2) {
             std::cerr << "Ошибка: неверный выбор источника.\n";
+            pauseBeforeExit();
             return 1;
         }
 
@@ -59,6 +95,7 @@ int main() {
             std::ifstream inFile(filename);
             if (!inFile) {
                 std::cerr << "Ошибка: файл не найден.\n";
+                pauseBeforeExit();
                 return 1;
             }
 
@@ -78,9 +115,14 @@ int main() {
 
         int showChoice;
         std::cout << "Показать результат на экран? (1 — да, 0 — нет): ";
-        if (!safeInputInt(showChoice, "Введите 1 или 0.")) return 1;
+        if (!safeInputInt(showChoice, "Введите 1 или 0.")) {
+            pauseBeforeExit();
+            return 1;
+
+        }
         if (showChoice != 0 && showChoice != 1) {
             std::cerr << "Ошибка: введите только 1 (да) или 0 (нет).\n";
+            pauseBeforeExit();
             return 1;
         }
         bool showResult = (showChoice == 1);
@@ -90,13 +132,37 @@ int main() {
         // --------------------------------
 
         int cipherChoice;
-        std::cout << "Выберите шифр:\n1 — Гронсфельд\n2 — Виженера\n3 — RSA\nВаш выбор: ";
-        if (!safeInputInt(cipherChoice, "Введите 1, 2 или 3.")) return 1;
-        if (cipherChoice < 1 || cipherChoice > 3) {
-            std::cerr << "Ошибка: неверный выбор шифра.\n";
-            return 1;
+        CipherType cipher;
+        bool validCipher = false;
+
+        while (!validCipher) {
+            std::cout << "\nВыберите шифр:\n";
+            if (gronsfeldAvailable) std::cout << "1 — Гронсфельд\n";
+            if (vigenereAvailable)  std::cout << "2 — Виженера\n";
+            if (rsaAvailable)       std::cout << "3 — RSA\n";
+            std::cout << "Ваш выбор: ";
+
+            if (!safeInputInt(cipherChoice, "Введите номер доступного шифра.")) {
+                pauseBeforeExit();
+                return 1;
+            }
+            cipher = static_cast<CipherType>(cipherChoice);
+
+            switch (cipher) {
+                case CipherType::Gronsfeld: validCipher = gronsfeldAvailable; break;
+                case CipherType::Vigenere:  validCipher = vigenereAvailable; break;
+                case CipherType::RSA:       validCipher = rsaAvailable; break;
+                default: validCipher = false; break;
+            }
+
+            if (!validCipher) {
+                std::cerr << "Выбранный модуль недоступен. Пожалуйста, выберите другой.\n";
+            } else {
+                // сохранить выбор
+                cipher = static_cast<CipherType>(cipherChoice);
+                break;
+            }
         }
-        CipherType cipher = static_cast<CipherType>(cipherChoice);
 
         // --------------------------------
         //       5. Выбор действия
@@ -104,9 +170,13 @@ int main() {
 
         int actionChoice;
         std::cout << "Выберите действие:\n1 — Зашифровать\n2 — Расшифровать\nВаш выбор: ";
-        if (!safeInputInt(actionChoice, "Введите 1 или 2.")) return 1;
+        if (!safeInputInt(actionChoice, "Введите 1 или 2.")) {
+            pauseBeforeExit();
+            return 1;
+        }
         if (actionChoice != 1 && actionChoice != 2) {
             std::cerr << "Ошибка: неверный выбор действия.\n";
+            pauseBeforeExit();
             return 1;
         }
         ActionType action = static_cast<ActionType>(actionChoice);
@@ -125,9 +195,13 @@ int main() {
 
         int processChoice;
         std::cout << "Показать процесс шифрования? (1 — да, 0 — нет): ";
-        if (!safeInputInt(processChoice, "Введите 1 или 0.")) return 1;
+        if (!safeInputInt(processChoice, "Введите 1 или 0.")) {
+            pauseBeforeExit();
+            return 1;
+        }
         if (processChoice != 0 && processChoice != 1) {
             std::cerr << "Ошибка: введите только 1 или 0.\n";
+            pauseBeforeExit();
             return 1;
         }
         bool showProcess = (processChoice == 1);
@@ -142,30 +216,72 @@ int main() {
             simulateProcessing();
         }
 
+        EncryptFunc gronsfeldEncryptFunc = nullptr;
+        DecryptFunc gronsfeldDecryptFunc = nullptr;
+
+        if (!gronsfeldLib) {
+            std::cerr << "Модуль шифра Гронсфельда не найден.\n";
+        } else {
+            gronsfeldEncryptFunc = (EncryptFunc)dlsym(gronsfeldLib, "gronsfeldEncrypt");
+            gronsfeldDecryptFunc = (DecryptFunc)dlsym(gronsfeldLib, "gronsfeldDecrypt");
+        }
+
         switch (cipher) {
             case CipherType::Gronsfeld:
+                gronsfeldEncryptFunc = (EncryptFunc)dlsym(gronsfeldLib, "gronsfeldEncrypt");
+                gronsfeldDecryptFunc = (DecryptFunc)dlsym(gronsfeldLib, "gronsfeldDecrypt");
+
+                if (!gronsfeldEncryptFunc || !gronsfeldDecryptFunc) {
+                    std::cerr << "Функции шифрования Гронсфельда не загружены.\n";
+                    pauseBeforeExit();
+                    return 1;
+                }
+
                 output = (action == ActionType::Encrypt)
-                ? gronsfeldEncrypt(input, key)
-                : gronsfeldDecrypt(input, key);
+                ? gronsfeldEncryptFunc(input, key)
+                : gronsfeldDecryptFunc(input, key);
                 break;
 
             case CipherType::Vigenere:
+                vigenereEncryptFunc = (EncryptFunc)dlsym(vigenereLib, "vigenereEncrypt");
+                vigenereDecryptFunc = (DecryptFunc)dlsym(vigenereLib, "vigenereDecrypt");
+
+                if (!vigenereEncryptFunc || !vigenereDecryptFunc) {
+                    std::cerr << "Функции шифрования Виженера не загружены.\n";
+                    pauseBeforeExit();
+                    return 1;
+                }
+
                 output = (action == ActionType::Encrypt)
-                ? vigenereEncrypt(input, key)
-                : vigenereDecrypt(input, key);
+                ? vigenereEncryptFunc(input, key)
+                : vigenereDecryptFunc(input, key);
                 break;
 
             case CipherType::RSA: {
-                auto [n, e, d] = rsaGenerateKeys();
-                std::cout << "RSA ключи:\n n = " << n << "\n e = " << e << "\n d = " << d << "\n";
-                output = (action == ActionType::Encrypt)
-                ? rsaEncrypt(input, e, n)
-                : rsaDecrypt(input, d, n);
+                rsaGenerateKeysFunc = (KeyGenFunc)dlsym(rsaLib, "rsaGenerateKeys");
+                rsaEncryptFunc = (RSAEncryptFunc)dlsym(rsaLib, "rsaEncrypt");
+                rsaDecryptFunc = (RSADecryptFunc)dlsym(rsaLib, "rsaDecrypt");
+
+                if (!rsaGenerateKeysFunc || !rsaEncryptFunc || !rsaDecryptFunc) {
+                    std::cerr << "Функции RSA не загружены.\n";
+                    pauseBeforeExit();
+                    return 1;
+                }
+
+                {
+                    auto [n, e, d] = rsaGenerateKeysFunc();
+                    std::cout << "RSA ключи:\n n = " << n << "\n e = " << e << "\n d = " << d << "\n";
+
+                    output = (action == ActionType::Encrypt)
+                    ? rsaEncryptFunc(input, e, n)
+                    : rsaDecryptFunc(input, d, n);
+                }
                 break;
             }
 
             default:
                 std::cerr << "Ошибка: неизвестный шифр.\n";
+                pauseBeforeExit();
                 return 1;
         }
 
@@ -196,8 +312,16 @@ int main() {
             std::cout << "\nИтог:\n" << output << "\n";
         }
 
+        pauseBeforeExit();
+
+        // Закрытие библиотек
+        if (gronsfeldLib) dlclose(gronsfeldLib);
+        if (vigenereLib)  dlclose(vigenereLib);
+        if (rsaLib)       dlclose(rsaLib);
+
     } catch (const std::exception& e) {
         std::cerr << "Ошибка: " << e.what() << std::endl;
+        pauseBeforeExit();
     }
 
     return 0;
