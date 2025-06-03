@@ -46,6 +46,8 @@ bool safeInputInt(int& var, const std::string& errorMsg);
 // Ожидает нажатия Enter для завершения работы
 void pauseBeforeExit();
 
-// Проверка правильности ключа
+// Генерация рандомного числового ключа
 std::string generateRandomNumericKey(size_t length = 16);
+
+// Проверка правильности ключа
 bool isNumericKeyValid(const std::string& key);

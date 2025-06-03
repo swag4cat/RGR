@@ -52,8 +52,8 @@ void simulateProcessing();
 int main() {
     try {
 
-        SetConsoleOutputCP(CP_UTF8); // для вывода
-        SetConsoleCP(CP_UTF8);       // для ввода
+        SetConsoleOutputCP(CP_UTF8); // Для вывода
+        SetConsoleCP(CP_UTF8);       // Для ввода
         std::locale::global(std::locale(""));
 
         printAsciiArt(); // Вывод логотипа
@@ -210,14 +210,15 @@ int main() {
             pauseBeforeExit();
             return 1;
         }
+
         if (genChoice == 1) {
             key = generateRandomNumericKey();
             std::cout << "Сгенерированный ключ: " << key << "\n";
         } else {
             std::cout << "Введите ключ: ";
             std::getline(std::cin, key);
-            if (!isNumericKeyValid(key)) {
-                std::cerr << "Ошибка: ключ должен содержать только цифры.\n";
+            if (key.empty()) {
+                std::cerr << "Ошибка: ключ не может быть пустым.\n";
                 pauseBeforeExit();
                 return 1;
             }

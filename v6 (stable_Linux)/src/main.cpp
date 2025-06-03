@@ -199,8 +199,8 @@ int main() {
         } else {
             std::cout << "Введите ключ: ";
             std::getline(std::cin, key);
-            if (!isNumericKeyValid(key)) {
-                std::cerr << "Ошибка: ключ должен содержать только цифры.\n";
+            if (key.empty()) {
+                std::cerr << "Ошибка: ключ не может быть пустым.\n";
                 pauseBeforeExit();
                 return 1;
             }
