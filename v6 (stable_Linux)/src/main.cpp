@@ -186,8 +186,25 @@ int main() {
         // --------------------------------
 
         std::string key;
-        std::cout << "Введите ключ: ";
-        std::getline(std::cin, key);
+        int genChoice;
+        std::cout << "Сгенерировать случайный цифровой ключ? (1 — да, 0 — нет): ";
+        if (!safeInputInt(genChoice, "Введите 1 или 0.") || (genChoice != 0 && genChoice != 1)) {
+            std::cerr << "Ошибка: необходимо ввести 1 (да) или 0 (нет).\n";
+            pauseBeforeExit();
+            return 1;
+        }
+        if (genChoice == 1) {
+            key = generateRandomNumericKey();
+            std::cout << "Сгенерированный ключ: " << key << "\n";
+        } else {
+            std::cout << "Введите ключ: ";
+            std::getline(std::cin, key);
+            if (!isNumericKeyValid(key)) {
+                std::cerr << "Ошибка: ключ должен содержать только цифры.\n";
+                pauseBeforeExit();
+                return 1;
+            }
+        }
 
         // --------------------------------
         //    7. Визуализация процесса

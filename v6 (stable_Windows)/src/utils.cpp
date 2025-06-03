@@ -2,6 +2,9 @@
 #include <fstream>
 #include <thread>
 #include <limits>
+#include <random>
+#include <cctype>
+#include <algorithm>
 
 #include "utils.h"
 
@@ -80,4 +83,22 @@ void pauseBeforeExit() {
     std::cout << "\nНажмите Enter для выхода...";
     std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
     std::cin.get();
+}
+
+// Генерация рандомного числового ключа
+std::string generateRandomNumericKey(size_t length) {
+    std::string key;
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<> dist(0, 9);
+
+    for (size_t i = 0; i < length; ++i) {
+        key += static_cast<char>('0' + dist(gen));
+    }
+    return key;
+}
+
+// Проверка правильности ключа
+bool isNumericKeyValid(const std::string& key) {
+    return !key.empty() && std::all_of(key.begin(), key.end(), ::isdigit);
 }
