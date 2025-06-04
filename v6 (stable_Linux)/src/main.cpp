@@ -92,7 +92,7 @@ int main() {
             std::cout << "Введите имя файла (например: input.txt): ";
             std::getline(std::cin, filename);
 
-            std::ifstream inFile(filename);
+            std::ifstream inFile(filename, std::ios::binary);
             if (!inFile) {
                 std::cerr << "Ошибка: файл не найден.\n";
                 pauseBeforeExit();
@@ -319,7 +319,7 @@ int main() {
         //   10. Сохраниение результата
         // --------------------------------
 
-        std::ofstream outFile("output.txt");
+        std::ofstream outFile("output.txt", std::ios::binary);
         outFile << output;
         outFile.close();
 
